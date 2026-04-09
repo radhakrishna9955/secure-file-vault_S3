@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  backend:
+    image: yourdockeruser/securevault-backend:latest
+    container_name: securevault-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    networks:
+      - vault-network
+
+  frontend:
+    image: yourdockeruser/securevault-frontend:latest
+    container_name: securevault-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://your-ec2-domain:5000/api
+      - NEXTAUTH_URL=http://your-ec2-domain:3000
+    networks:
+      - vault-network
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:alpine
+    container_name: securevault-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/ssl
+    networks:
+      - vault-network
+    depends_on:
+      - frontend
+      - backend
+
+networks:
+  vault-network:
+    driver: bridge
